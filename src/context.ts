@@ -4,7 +4,6 @@ import Record from "./record";
 import Transaction from "./transaction";
 import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types";
 
-
 export enum BuyPrice {
   OPEN = "o",
   CLOSE = "c",
@@ -44,17 +43,20 @@ export default class Context {
   sellPrice: SellPrice; // 賣出價格位置
   sellMethod: (stockId: string, date: number) => StockType | null; // 賣出條件
   buyMethod: (stockId: string, date: number) => StockType | null; // 買入條件
+  stocks: { id: string; name: string }[]; // 股票清單
 
   constructor({
-    dateSequence,
-    options,
+    dates,
     sell,
     buy,
+    stocks,
+    options,
   }: {
-    dateSequence: DateSequence;
+    dates: number[];
     sell: (stockId: string, date: number) => StockType | null;
     buy: (stockId: string, date: number) => StockType | null;
     options?: Options;
+    stocks?: { id: string; name: string }[];
   }) {
     this.unSoldProfit = 0;
     this.capital = options?.capital ? options.capital : 300000;
@@ -71,30 +73,31 @@ export default class Context {
       limitHandlingFee: options?.limitHandlingFee,
     });
     this.record = new Record();
-    this.dateSequence = dateSequence;
+    this.dateSequence = new DateSequence({
+      data: dates,
+    });
     this.dateSequence.attach(this);
+    this.stocks = stocks || [];
   }
 
   buy(stockId: string, date: number) {
     // 在庫存中 跳過
     if (this.record.getInventoryStockId(stockId)) return;
-    
+
     // 達到買入條件加入待購清單
     const data = this.buyMethod(stockId, date);
 
     // 如果回傳空值 跳過
-    if(!data) return;
+    if (!data) return;
 
     // 如果高過或低於股價設定區間 跳過
     if (
       (this.hightStockPrice && data.l > this.hightStockPrice) ||
       (this.lowStockPrice && data.l < this.lowStockPrice)
     )
-    return;
+      return;
     // 買入價格
-    const buyPrice = this.transaction.getBuyPrice(
-      data[this.buyPrice]
-    );
+    const buyPrice = this.transaction.getBuyPrice(data[this.buyPrice]);
 
     // 如果最高價超過資金上限 跳過
     if (buyPrice > this.capital) return;
@@ -114,14 +117,12 @@ export default class Context {
     if (!this.record.getInventoryStockId(stockId)) return;
 
     const data = this.sellMethod(stockId, date);
-    
+
     // 如果回傳空值 跳過
-    if(!data) return;
+    if (!data) return;
 
     // 賣出價格
-    const sellPrice = this.transaction.getSellPrice(
-      data[this.sellPrice]
-    );
+    const sellPrice = this.transaction.getSellPrice(data[this.sellPrice]);
 
     // 在待售清單內 買入
     if (this.record.getWaitSaleStockId(stockId)) {
@@ -134,8 +135,7 @@ export default class Context {
     const buyData = this.record.getInventoryStockIdData(stockId);
     if (
       this.hightLoss &&
-      buyData.buyPrice - buyData.buyPrice * this.hightLoss >
-        1000 * data.l
+      buyData.buyPrice - buyData.buyPrice * this.hightLoss > 1000 * data.l
     ) {
       this.record.saveWaitSale(stockId, data);
       return;
@@ -145,9 +145,15 @@ export default class Context {
     this.record.saveWaitSale(stockId, data);
   }
 
-  update() {
+  update(date: number) {
     try {
-      // 更新日期時處理...
+      for (const stock in this.stocks) {
+        const stockId = this.stocks[stock].id;
+        const stockName = this.stocks[stock].name;
+        if (date) return;
+        this.buy(stockId, date);
+        this.sell(stockId, stockName, date);
+      }
     } catch (error) {
       console.log("update error:", error);
     }
@@ -156,5 +162,4 @@ export default class Context {
   run() {
     return this.dateSequence.next();
   }
-
 }

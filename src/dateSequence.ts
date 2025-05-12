@@ -1,18 +1,16 @@
-export type DatesData = number;
-
 interface DateSequenceConstructorType {
-  data: DatesData[];
+  data: number[];
 }
 
 interface Observer {
-  update(currentDate: DatesData | undefined): void;
+  update(currentDate: number): void;
 }
 
 export default class DateSequence {
   // types
-  futureDates: DatesData[];
-  historyDates: DatesData[];
-  currentDate: DatesData | undefined;
+  futureDates: number[];
+  historyDates: number[];
+  currentDate: number | undefined;
   observers: Observer[];
 
   constructor({ data }: DateSequenceConstructorType) {
@@ -37,18 +35,20 @@ export default class DateSequence {
   }
 
   notifyAllObservers() {
-    this.observers.forEach((observer) => {
-      observer.update(this.currentDate);
-    });
+    if (this.currentDate) {
+      this.observers.forEach((observer) =>
+        observer.update(this.currentDate as number)
+      );
+    }
   }
 
   next() {
-    this.notifyAllObservers();
     if (this.futureDates.length > 0) {
       const data = this.futureDates.shift();
       if (data) {
         this.currentDate = data;
         this.historyDates.push(data);
+        this.notifyAllObservers();
         return true;
       }
     }
