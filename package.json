@@ -1,72 +1,24 @@
 {
-  "name": "@ch20026103/backtest2",
-  "version": "0.0.1-alpha",
-  "description": "provide many analyze methods in the library.",
-  "keywords": [],
-  "bugs": "git@github.com:cosmic1330/backtest/issues",
-  "repository": "git@github.com:cosmic1330/backtest",
-  "license": "ISC",
-  "author": "kim <ch20026103@yahoo.com.tw> (https://github.com/cosmic1330)",
-  "contributors": [],
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "browser": "dist/umd/index.js",
-  "types": "dist/esm/index.d.ts",
-  "scripts": {
-    "build": "pnpm clean && pnpm build:esm && pnpm build:cjs && pnpm build:umd",
-    "build:cjs": "tsc --module commonjs --target es5 --outDir dist/cjs",
-    "build:esm": "tsc --module esnext --target es5 --outDir dist/esm",
-    "build:umd": "rollup dist/esm/index.js --file dist/umd/index.js --format umd --name context",
-    "clean": "rimraf dist",
-    "lint": "eslint --fix \"**/*.{js,jsx,ts,tsx,mjs}\"",
-    "prepare": "pnpm exec husky install",
-    "prettier": "pnpm exec prettier --write ./src",
-    "prepublishOnly": "pnpm build",
-    "published": "npm publish --registry http://localhost:4873",
-    "unpublished": "npm unpublish --force --registry http://localhost:4873 ",
-    "test": "vitest",
-    "demo": "vite"
+  "name": "backtest-lib",
+  "version": "0.0.1",
+  "main": "dist/math.cjs.js",
+  "module": "dist/math.esm.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    "require": "./dist/math.cjs.js",
+    "import": "./dist/math.esm.js"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs}": [
-      "pnpm lint"
-    ]
+  "scripts": {
+    "build": "rollup -c && tsc",
+    "demo": "cd demo-vite && pnpm run dev"
   },
   "devDependencies": {
-    "@commitlint/cli": "^15.0.0",
-    "@commitlint/config-conventional": "^15.0.0",
-    "@rollup/plugin-commonjs": "^21.0.1",
-    "@rollup/plugin-node-resolve": "^13.1.1",
-    "@types/jest": "^26.0.24",
-    "@types/lodash": "^4.14.168",
-    "@types/node": "^16.11.17",
-    "@typescript-eslint/eslint-plugin": "^5.8.1",
-    "@typescript-eslint/parser": "^5.8.1",
-    "@vitejs/plugin-react-refresh": "^1.3.6",
-    "axios": "^0.24.0",
-    "c8": "^7.10.0",
-    "eslint": "^7.32.0",
-    "husky": "^7.0.4",
-    "jsdom": "^19.0.0",
-    "lint-staged": "^12.1.4",
-    "prettier": "^2.5.1",
-    "pretty-quick": "^3.1.3",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "rimraf": "^3.0.2",
-    "rollup": "^2.62.0",
-    "typescript": "^4.5.4",
-    "vite": "^2.7.9",
-    "vite-tsconfig-paths": "^3.3.17",
-    "vitest": "^0.0.117"
-  },
-  "vota": {
-    "node": "16.13.0"
+    "@rollup/plugin-typescript": "^11.1.6",
+    "rollup": "^3.0.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@ch20026103/anysis": "^0.0.16-alpha",
-    "express": "^4.21.0",
-    "lodash": "^4.17.21",
-    "node-fetch": "^3.3.2"
+    "@ch20026103/anysis": "0.0.17-alpha1",
+    "tslib": "^2.8.1"
   }
 }

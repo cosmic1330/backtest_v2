@@ -1,10 +1,26 @@
 import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types";
+
+enum TimelineType {
+  BUY = "BUY",
+  SELL = "SELL",
+  WAIT_BUY = "WAIT_BUY",
+  WAIT_SELL = "WAIT_SELL",
+}
+
 type InventoryItem = {
   data: StockType;
   buyPrice: number;
 };
 
 export default class Record {
+  timeline: {
+    [time: number]: {
+      type: TimelineType;
+      name: string;
+      id: string;
+      data: StockType;
+    }[];
+  };
   win: number;
   lose: number;
   profit: number;
@@ -18,6 +34,7 @@ export default class Record {
   };
 
   constructor() {
+    this.timeline = {};
     this.inventory = {};
     this.history = [];
     this.win = 0;
@@ -25,6 +42,21 @@ export default class Record {
     this.profit = 0;
     this.waitSale = {};
     this.waitPurchased = {};
+  }
+
+  addTimeline(
+    time: number,
+    data: {
+      type: TimelineType;
+      name: string;
+      id: string;
+      data: StockType;
+    }
+  ) {
+    if (!this.timeline[time]) {
+      this.timeline[time] = [];
+    }
+    this.timeline[time].push(data);
   }
 
   init() {
@@ -37,13 +69,21 @@ export default class Record {
     this.waitPurchased = {};
   }
 
-  save(id: string, data: StockType, buyPrice: number) {
+  save(id: string, data: StockType, buyPrice: number, date: number) {
     this.inventory[id] = { data, buyPrice };
+    // add timeline
+    this.addTimeline(date, {
+      type: TimelineType.BUY,
+      name: id,
+      id,
+      data,
+    });
     // clear
     delete this.waitPurchased[id];
+
   }
 
-  remove(id: string, name: string, data: StockType, sellPrice: number) {
+  remove(id: string, name: string, data: StockType, sellPrice: number, date: number) {
     const res = {
       id,
       name,
@@ -63,17 +103,36 @@ export default class Record {
       this.lose += 1;
       this.profit += profit;
     }
+    // add timeline
+    this.addTimeline(date, {
+      type: TimelineType.SELL,
+      name,
+      id,
+      data,
+    });
     // clear
     delete this.inventory[id];
     delete this.waitSale[id];
   }
 
-  saveWaitPurchased(key: string, value: StockType) {
+  saveWaitPurchased(key: string, value: StockType, date: number) {
     this.waitPurchased[key] = value;
+    this.addTimeline(date, {
+      type: TimelineType.WAIT_BUY,
+      name: key,
+      id: key,
+      data: value,
+    });
   }
 
-  saveWaitSale(key: string, value: StockType) {
+  saveWaitSale(key: string, value: StockType, date: number) {
     this.waitSale[key] = value;
+    this.addTimeline(date, {
+      type: TimelineType.WAIT_SELL,
+      name: key,
+      id: key,
+      data: value,
+    });
   }
 
   getInventoryStockId(stockId: string) {

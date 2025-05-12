@@ -1,4 +1,3 @@
-import _ from "lodash";
 import DateSequence from "./dateSequence";
 import Record from "./record";
 import Transaction from "./transaction";
@@ -90,6 +89,7 @@ export default class Context {
     // 如果回傳空值 跳過
     if (!data) return;
 
+
     // 如果高過或低於股價設定區間 跳過
     if (
       (this.hightStockPrice && data.l > this.hightStockPrice) ||
@@ -104,12 +104,12 @@ export default class Context {
 
     // 在待購清單內 買入
     if (this.record.getWaitPurchasedStockId(stockId)) {
-      this.record.save(stockId, data, buyPrice);
+      this.record.save(stockId, data, buyPrice, date);
       this.capital -= buyPrice; // 扣錢
       return;
     }
 
-    this.record.saveWaitPurchased(stockId, data);
+    this.record.saveWaitPurchased(stockId, data, date);
   }
 
   sell(stockId: string, stockName: string, date: number) {
@@ -126,7 +126,7 @@ export default class Context {
 
     // 在待售清單內 買入
     if (this.record.getWaitSaleStockId(stockId)) {
-      this.record.remove(stockId, stockName, data, sellPrice);
+      this.record.remove(stockId, stockName, data, sellPrice, date);
       this.capital += sellPrice;
       return;
     }
@@ -137,12 +137,12 @@ export default class Context {
       this.hightLoss &&
       buyData.buyPrice - buyData.buyPrice * this.hightLoss > 1000 * data.l
     ) {
-      this.record.saveWaitSale(stockId, data);
+      this.record.saveWaitSale(stockId, data, date);
       return;
     }
 
     // 達到賣出條件加入待售清單
-    this.record.saveWaitSale(stockId, data);
+    this.record.saveWaitSale(stockId, data, date);
   }
 
   update(date: number) {
@@ -150,7 +150,7 @@ export default class Context {
       for (const stock in this.stocks) {
         const stockId = this.stocks[stock].id;
         const stockName = this.stocks[stock].name;
-        if (date) return;
+        if (!date) return;
         this.buy(stockId, date);
         this.sell(stockId, stockName, date);
       }

@@ -1,29 +1,16 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "target": "es5",
-    "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "allowJs": true,
-    "outDir": "dist",
-    "skipLibCheck": false,
     "declaration": true,
-    "esModuleInterop": false,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/esm",
+    "module": "ESNext",
+    "target": "ES2018",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "isolatedModules": false,
-    "jsx": "react",
-    "noFallthroughCasesInSwitch": true,
-    "types": ["vitest/global"],
-    "noEmit": false,
-    "paths": {
-      "@": ["./src/*"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
-  "exclude": ["src/react-app-env.d.ts"]
+  "exclude": ["node_modules", "dist", "demo-vite"]
 }
