@@ -1,0 +1,3 @@
+node_modules
+dist
+.verdaccio-db.json

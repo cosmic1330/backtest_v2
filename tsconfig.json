@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "target": "es5",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": true,
+    "outDir": "dist",
+    "skipLibCheck": false,
+    "declaration": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "jsx": "react",
+    "noFallthroughCasesInSwitch": true,
+    "types": ["vitest/global"],
+    "noEmit": false,
+    "paths": {
+      "@": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["src/react-app-env.d.ts"]
+}
