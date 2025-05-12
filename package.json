@@ -1,6 +1,9 @@
 {
   "name": "@ch20026103/backtest-lib",
   "version": "0.0.1-alpha",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/math.cjs.js",
   "module": "dist/math.esm.js",
   "types": "dist/types/index.d.ts",
