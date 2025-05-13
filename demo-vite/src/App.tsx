@@ -53,7 +53,7 @@ function App() {
 
     let status = true;
     while (status) {
-      status = context.run();
+      status = await context.run();
     }
     setCtx(context);
     console.log("context", context);

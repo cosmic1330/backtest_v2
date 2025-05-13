@@ -34,21 +34,23 @@ export default class DateSequence {
     this.observers.push(observer);
   }
 
-  notifyAllObservers() {
+  async notifyAllObservers() {
     if (this.currentDate) {
-      this.observers.forEach((observer) =>
-        observer.update(this.currentDate as number)
+      await Promise.all(
+        this.observers.map((observer) =>
+          observer.update(this.currentDate as number)
+        )
       );
     }
   }
 
-  next() {
+  async next() {
     if (this.futureDates.length > 0) {
       const data = this.futureDates.shift();
       if (data) {
         this.currentDate = data;
         this.historyDates.push(data);
-        this.notifyAllObservers();
+        await this.notifyAllObservers();
         return true;
       }
     }

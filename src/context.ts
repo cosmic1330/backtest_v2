@@ -33,15 +33,14 @@ export default class Context {
   transaction: Transaction; // 交易模組
   record: Record; // 紀錄模組
   capital: number; // 本金
-  copy_capital: number; // 紀錄預設本金
   hightLoss?: number; // 虧損上限
   unSoldProfit: number; // 未實現損益
   hightStockPrice?: number; // 買入股價上限
   lowStockPrice?: number; // 買入股價下限
   buyPrice: BuyPrice; // 買入價格位置
   sellPrice: SellPrice; // 賣出價格位置
-  sellMethod: (stockId: string, date: number) => StockType | null; // 賣出條件
-  buyMethod: (stockId: string, date: number) => StockType | null; // 買入條件
+  sellMethod: (stockId: string, date: number) => Promise<StockType | null>; // 賣出條件
+  buyMethod: (stockId: string, date: number) => Promise<StockType | null>; // 買入條件
   stocks: { id: string; name: string }[]; // 股票清單
 
   constructor({
@@ -52,14 +51,13 @@ export default class Context {
     options,
   }: {
     dates: number[];
-    sell: (stockId: string, date: number) => StockType | null;
-    buy: (stockId: string, date: number) => StockType | null;
+    sell: (stockId: string, date: number) =>  Promise<StockType | null>;
+    buy: (stockId: string, date: number) =>  Promise<StockType | null>;
     options?: Options;
     stocks?: { id: string; name: string }[];
   }) {
     this.unSoldProfit = 0;
     this.capital = options?.capital ? options.capital : 300000;
-    this.copy_capital = this.capital;
     this.hightStockPrice = options?.hightStockPrice;
     this.lowStockPrice = options?.lowStockPrice;
     this.hightLoss = options?.hightLoss; // 0.1 = 10%
@@ -79,12 +77,12 @@ export default class Context {
     this.stocks = stocks || [];
   }
 
-  buyFlow(stockId: string, date: number) {
+  async buyFlow(stockId: string, date: number) {
     // 在庫存中 跳過
     if (this.record.getInventoryStockId(stockId)) return;
 
     // 達到買入條件加入待購清單
-    const data = this.buyMethod(stockId, date);
+    const data = await this.buyMethod(stockId, date);
 
     // 如果回傳空值 跳過
     if (!data) return;
@@ -112,11 +110,11 @@ export default class Context {
     this.record.saveWaitPurchased(stockId, data, date);
   }
 
-  sellFlow(stockId: string, stockName: string, date: number) {
+  async sellFlow(stockId: string, stockName: string, date: number) {
     // 如果不在庫存 跳過
     if (!this.record.getInventoryStockId(stockId)) return;
 
-    const data = this.sellMethod(stockId, date);
+    const data = await this.sellMethod(stockId, date);
 
     // 如果回傳空值 跳過
     if (!data) return;
@@ -145,21 +143,22 @@ export default class Context {
     this.record.saveWaitSale(stockId, data, date);
   }
 
-  update(date: number) {
+  async update(date: number) {
     try {
       for (const stock in this.stocks) {
         const stockId = this.stocks[stock].id;
         const stockName = this.stocks[stock].name;
         if (!date) return;
-        this.buyFlow(stockId, date);
-        this.sellFlow(stockId, stockName, date);
+        await this.buyFlow(stockId, date);
+        await this.sellFlow(stockId, stockName, date);
       }
     } catch (error) {
       console.log("update error:", error);
     }
+    return true;
   }
 
-  run() {
-    return this.dateSequence.next();
+  async run() {
+    return await this.dateSequence.next();
   }
 }
