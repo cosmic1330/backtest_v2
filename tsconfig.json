@@ -2,13 +2,15 @@
   "compilerOptions": {
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "./dist/esm",
+    "outDir": "dist",
+    "baseUrl": ".",
     "module": "ESNext",
     "target": "ES2018",
     "moduleResolution": "Node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "strict": true,
+    "jsx": "react",
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],

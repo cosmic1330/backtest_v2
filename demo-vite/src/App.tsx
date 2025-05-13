@@ -1,8 +1,8 @@
 import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types.js";
 import { useCallback, useEffect, useState } from "react";
-import { Context } from "../../src/index"; // 匯入模組
 import "./App.css";
 import viteLogo from "/vite.svg";
+import { Context } from "../../dist/esm";
 
 function App() {
   const [ctx, setCtx] = useState<Context | null>(null);
