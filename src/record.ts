@@ -80,10 +80,15 @@ export default class Record {
     });
     // clear
     delete this.waitPurchased[id];
-
   }
 
-  remove(id: string, name: string, data: StockType, sellPrice: number, date: number) {
+  remove(
+    id: string,
+    name: string,
+    data: StockType,
+    sellPrice: number,
+    date: number
+  ) {
     const res = {
       id,
       name,
@@ -117,12 +122,6 @@ export default class Record {
 
   saveWaitPurchased(key: string, value: StockType, date: number) {
     this.waitPurchased[key] = value;
-    this.addTimeline(date, {
-      type: TimelineType.WAIT_BUY,
-      name: key,
-      id: key,
-      data: value,
-    });
   }
 
   saveWaitSale(key: string, value: StockType, date: number) {

@@ -94,11 +94,17 @@ export default class Context {
       (this.lowStockPrice && data.l < this.lowStockPrice)
     )
       return;
+
     // 買入價格
     const buyPrice = this.transaction.getBuyPrice(data[this.buyPrice]);
-
-    // 如果最高價超過資金上限 跳過
-    if (buyPrice > this.capital) return;
+    // 如果買入價格超過資金上限 跳過
+    if (buyPrice > this.capital){
+      // 如果在待購清單內移除
+      if (this.record.getWaitPurchasedStockId(stockId)) {
+        this.record.removeWaitPurchased(stockId);
+      }
+      return;
+    };
 
     // 在待購清單內 買入
     if (this.record.getWaitPurchasedStockId(stockId)) {
