@@ -1,6 +1,6 @@
 {
   "name": "@ch20026103/backtest-lib",
-  "version": "0.0.1-alpha",
+  "version": "0.0.1-beta",
   "publishConfig": {
     "access": "public"
   },
