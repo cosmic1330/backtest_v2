@@ -79,7 +79,7 @@ export default class Context {
     this.stocks = stocks || [];
   }
 
-  buy(stockId: string, date: number) {
+  buyFlow(stockId: string, date: number) {
     // 在庫存中 跳過
     if (this.record.getInventoryStockId(stockId)) return;
 
@@ -112,7 +112,7 @@ export default class Context {
     this.record.saveWaitPurchased(stockId, data, date);
   }
 
-  sell(stockId: string, stockName: string, date: number) {
+  sellFlow(stockId: string, stockName: string, date: number) {
     // 如果不在庫存 跳過
     if (!this.record.getInventoryStockId(stockId)) return;
 
@@ -151,8 +151,8 @@ export default class Context {
         const stockId = this.stocks[stock].id;
         const stockName = this.stocks[stock].name;
         if (!date) return;
-        this.buy(stockId, date);
-        this.sell(stockId, stockName, date);
+        this.buyFlow(stockId, date);
+        this.sellFlow(stockId, stockName, date);
       }
     } catch (error) {
       console.log("update error:", error);
