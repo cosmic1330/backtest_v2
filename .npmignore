@@ -16,3 +16,5 @@ index.html
 example
 server.js
 demo-vite
+rollup.config.js
+node_modules
