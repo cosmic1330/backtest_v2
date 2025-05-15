@@ -16,15 +16,13 @@ export enum SellPrice {
   LOW = "l",
 }
 
-type Options = {
+export type Options = {
   handlingFeeRebate?: number;
   limitHandlingFee?: number;
   capital?: number;
   hightStockPrice?: number;
   lowStockPrice?: number;
   hightLoss?: number;
-  finalizePendingPurchases?: [string | number, string | number][];
-  finalizePendingSales?: [string | number, string | number][];
   buyPrice?: BuyPrice;
   sellPrice?: SellPrice;
 };
