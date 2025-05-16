@@ -37,8 +37,16 @@ export default class Context {
   lowStockPrice?: number; // 買入股價下限
   buyPrice: BuyPrice; // 買入價格位置
   sellPrice: SellPrice; // 賣出價格位置
-  sellMethod: (stockId: string, date: number) => Promise<StockType | null>; // 賣出條件
-  buyMethod: (stockId: string, date: number) => Promise<StockType | null>; // 買入條件
+  sellMethod: (
+    stockId: string,
+    date: number,
+    inWaitPurchased: boolean
+  ) => Promise<StockType | null>; // 賣出條件
+  buyMethod: (
+    stockId: string,
+    date: number,
+    inWaitSale: boolean
+  ) => Promise<StockType | null>; // 買入條件
   stocks: { id: string; name: string }[]; // 股票清單
 
   constructor({
@@ -49,8 +57,16 @@ export default class Context {
     options,
   }: {
     dates: number[];
-    sell: (stockId: string, date: number) =>  Promise<StockType | null>;
-    buy: (stockId: string, date: number) =>  Promise<StockType | null>;
+    sell: (
+      stockId: string,
+      date: number,
+      inWaitPurchased: boolean
+    ) => Promise<StockType | null>;
+    buy: (
+      stockId: string,
+      date: number,
+      inWaitSale: boolean
+    ) => Promise<StockType | null>;
     options?: Options;
     stocks?: { id: string; name: string }[];
   }) {
@@ -76,36 +92,41 @@ export default class Context {
   }
 
   async buyFlow(stockId: string, date: number) {
+    const inInventory = this.record.getInventoryStockId(stockId);
+    const inWaitPurchased = this.record.getWaitPurchasedStockId(stockId);
     // 在庫存中 跳過
-    if (this.record.getInventoryStockId(stockId)) return;
+    if (inInventory) return;
 
-    // 達到買入條件加入待購清單
-    const data = await this.buyMethod(stockId, date);
+    // 取待買或驗證通過的資料
+    const data = await this.buyMethod(stockId, date, inWaitPurchased);
 
     // 如果回傳空值 跳過
     if (!data) return;
-
 
     // 如果高過或低於股價設定區間 跳過
     if (
       (this.hightStockPrice && data.l > this.hightStockPrice) ||
       (this.lowStockPrice && data.l < this.lowStockPrice)
-    )
+    ) {
+      if (inWaitPurchased) {
+        this.record.removeWaitPurchased(stockId);
+      }
       return;
+    }
 
     // 買入價格
     const buyPrice = this.transaction.getBuyPrice(data[this.buyPrice]);
     // 如果買入價格超過資金上限 跳過
-    if (buyPrice > this.capital){
+    if (buyPrice > this.capital) {
       // 如果在待購清單內移除
-      if (this.record.getWaitPurchasedStockId(stockId)) {
+      if (inWaitPurchased) {
         this.record.removeWaitPurchased(stockId);
       }
       return;
-    };
+    }
 
     // 在待購清單內 買入
-    if (this.record.getWaitPurchasedStockId(stockId)) {
+    if (inWaitPurchased) {
       this.record.save(stockId, data, buyPrice, date);
       this.capital -= buyPrice; // 扣錢
       return;
@@ -118,7 +139,11 @@ export default class Context {
     // 如果不在庫存 跳過
     if (!this.record.getInventoryStockId(stockId)) return;
 
-    const data = await this.sellMethod(stockId, date);
+    const data = await this.sellMethod(
+      stockId,
+      date,
+      this.record.getWaitSaleStockId(stockId)
+    );
 
     // 如果回傳空值 跳過
     if (!data) return;
