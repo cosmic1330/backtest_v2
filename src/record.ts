@@ -1,5 +1,6 @@
 import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types";
 
+type RecordDate = number;
 enum TimelineType {
   BUY = "BUY",
   SELL = "SELL",
@@ -8,29 +9,38 @@ enum TimelineType {
 }
 
 type InventoryItem = {
-  data: StockType;
+  id: string;
+  name: string;
+  buyData: StockType;
   buyPrice: number;
+  buyDate: RecordDate;
+};
+
+type HistoryItem = InventoryItem & {
+  sellData: StockType;
+  sellPrice: number;
+  sellDate: RecordDate;
+};
+
+type TimeLineItem = {
+  type: TimelineType;
+  name: string;
+  id: string;
+  data: StockType;
 };
 
 export default class Record {
-  timeline: {
-    [time: number]: {
-      type: TimelineType;
-      name: string;
-      id: string;
-      data: StockType;
-    }[];
-  };
+  timeline: { [time: number]: TimeLineItem[] };
   win: number;
   lose: number;
   profit: number;
   inventory: { [stockId: string]: InventoryItem };
-  history: unknown[];
+  history: HistoryItem[];
   waitPurchased: {
-    [stockId: string]: StockType;
+    [stockId: string]: RecordDate;
   };
   waitSale: {
-    [stockId: string]: StockType;
+    [stockId: string]: RecordDate;
   };
 
   constructor() {
@@ -44,15 +54,7 @@ export default class Record {
     this.waitPurchased = {};
   }
 
-  addTimeline(
-    time: number,
-    data: {
-      type: TimelineType;
-      name: string;
-      id: string;
-      data: StockType;
-    }
-  ) {
+  addTimeline(time: number, data: TimeLineItem) {
     if (!this.timeline[time]) {
       this.timeline[time] = [];
     }
@@ -69,38 +71,30 @@ export default class Record {
     this.waitPurchased = {};
   }
 
-  save(id: string, data: StockType, buyPrice: number, date: number) {
-    this.inventory[id] = { data, buyPrice };
+  save(props: InventoryItem) {
+    this.inventory[props.id] = props;
     // add timeline
-    this.addTimeline(date, {
+    this.addTimeline(props.buyDate, {
       type: TimelineType.BUY,
-      name: id,
-      id,
-      data,
+      name: props.name,
+      id: props.id,
+      data: props.buyData,
     });
     // clear
-    delete this.waitPurchased[id];
+    delete this.waitPurchased[props.id];
   }
 
-  remove(
-    id: string,
-    name: string,
-    data: StockType,
-    sellPrice: number,
-    date: number
-  ) {
-    const res = {
-      id,
-      name,
-      buy: this.inventory[id],
-      sell: {
-        data,
-        sellPrice,
-      },
+  remove(props: Omit<HistoryItem, "buyData" | "buyPrice" | "buyDate">) {
+    const { buyData, buyPrice, buyDate } = this.inventory[props.id];
+    const res: HistoryItem = {
+      ...props,
+      buyData,
+      buyPrice,
+      buyDate,
     };
     this.history.push(res);
     // calculate
-    const profit = sellPrice - this.inventory[id].buyPrice;
+    const profit = props.sellPrice - this.inventory[props.id].buyPrice;
     if (profit > 0) {
       this.win += 1;
       this.profit += profit;
@@ -109,28 +103,54 @@ export default class Record {
       this.profit += profit;
     }
     // add timeline
-    this.addTimeline(date, {
+    this.addTimeline(props.sellDate, {
       type: TimelineType.SELL,
+      name: props.name,
+      id: props.id,
+      data: props.sellData,
+    });
+    // clear
+    delete this.inventory[props.id];
+    delete this.waitSale[props.id];
+  }
+
+  saveWaitPurchased({
+    id,
+    name,
+    data,
+    date,
+  }: {
+    id: string;
+    name: string;
+    data: StockType;
+    date: number;
+  }) {
+    this.waitPurchased[id] = date;
+    this.addTimeline(date, {
+      type: TimelineType.WAIT_BUY,
       name,
       id,
       data,
     });
-    // clear
-    delete this.inventory[id];
-    delete this.waitSale[id];
   }
 
-  saveWaitPurchased(key: string, value: StockType, date: number) {
-    this.waitPurchased[key] = value;
-  }
-
-  saveWaitSale(key: string, value: StockType, date: number) {
-    this.waitSale[key] = value;
+  saveWaitSale({
+    id,
+    name,
+    data,
+    date,
+  }: {
+    id: string;
+    name: string;
+    data: StockType;
+    date: number;
+  }) {
+    this.waitSale[id] = date;
     this.addTimeline(date, {
       type: TimelineType.WAIT_SELL,
-      name: key,
-      id: key,
-      data: value,
+      name,
+      id,
+      data,
     });
   }
 

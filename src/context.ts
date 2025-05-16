@@ -1,7 +1,7 @@
+import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types";
 import DateSequence from "./dateSequence";
 import Record from "./record";
 import Transaction from "./transaction";
-import type { StockType } from "@ch20026103/anysis/dist/esm/stockSkills/types";
 
 export enum BuyPrice {
   OPEN = "o",
@@ -91,11 +91,23 @@ export default class Context {
     this.stocks = stocks || [];
   }
 
-  async buyFlow(stockId: string, date: number) {
+  async buyFlow(stockId: string, stockName: string, date: number) {
     const inInventory = this.record.getInventoryStockId(stockId);
     const inWaitPurchased = this.record.getWaitPurchasedStockId(stockId);
     // 在庫存中 跳過
     if (inInventory) return;
+
+    // 在待購清單中但過期
+    if (
+      inWaitPurchased &&
+      this.record.waitPurchased[stockId] <
+        this.dateSequence.historyDates[
+          this.dateSequence.historyDates.length - 2
+        ]
+    ) {
+      this.record.removeWaitPurchased(stockId);
+      return;
+    }
 
     // 取待買或驗證通過的資料
     const data = await this.buyMethod(stockId, date, inWaitPurchased);
@@ -124,36 +136,49 @@ export default class Context {
       }
       return;
     }
-
     // 在待購清單內 買入
     if (inWaitPurchased) {
-      this.record.save(stockId, data, buyPrice, date);
+      this.record.save({
+        id: stockId,
+        name: stockName,
+        buyData: data,
+        buyPrice,
+        buyDate: date,
+      });
       this.capital -= buyPrice; // 扣錢
       return;
     }
-
-    this.record.saveWaitPurchased(stockId, data, date);
+    // 達到買入條件加入待購清單
+    this.record.saveWaitPurchased({
+      id: stockId,
+      name: stockName,
+      data,
+      date,
+    });
   }
 
   async sellFlow(stockId: string, stockName: string, date: number) {
     // 如果不在庫存 跳過
-    if (!this.record.getInventoryStockId(stockId)) return;
+    const inInventory = this.record.getInventoryStockId(stockId);
+    const inWaitSale = this.record.getWaitSaleStockId(stockId);
+    if (!inInventory) return;
 
-    const data = await this.sellMethod(
-      stockId,
-      date,
-      this.record.getWaitSaleStockId(stockId)
-    );
-
+    const data = await this.sellMethod(stockId, date, inWaitSale);
     // 如果回傳空值 跳過
     if (!data) return;
 
     // 賣出價格
     const sellPrice = this.transaction.getSellPrice(data[this.sellPrice]);
 
-    // 在待售清單內 買入
-    if (this.record.getWaitSaleStockId(stockId)) {
-      this.record.remove(stockId, stockName, data, sellPrice, date);
+    // 在待售清單內賣出
+    if (inWaitSale) {
+      this.record.remove({
+        id: stockId,
+        name: stockName,
+        sellData: data,
+        sellPrice,
+        sellDate: date,
+      });
       this.capital += sellPrice;
       return;
     }
@@ -164,21 +189,31 @@ export default class Context {
       this.hightLoss &&
       buyData.buyPrice - buyData.buyPrice * this.hightLoss > 1000 * data.l
     ) {
-      this.record.saveWaitSale(stockId, data, date);
+      this.record.saveWaitSale({
+        id: stockId,
+        name: stockName,
+        data,
+        date,
+      });
       return;
     }
 
     // 達到賣出條件加入待售清單
-    this.record.saveWaitSale(stockId, data, date);
+    this.record.saveWaitSale({
+      id: stockId,
+      name: stockName,
+      data,
+      date,
+    });
   }
 
   async update(date: number) {
     try {
-      for (const stock in this.stocks) {
-        const stockId = this.stocks[stock].id;
-        const stockName = this.stocks[stock].name;
-        if (!date) return;
-        await this.buyFlow(stockId, date);
+      for (let index = 0; index < this.stocks.length; index++) {
+        const element = this.stocks[index];
+        const stockId = element.id;
+        const stockName = element.name;
+        await this.buyFlow(stockId, stockName, date);
         await this.sellFlow(stockId, stockName, date);
       }
     } catch (error) {
