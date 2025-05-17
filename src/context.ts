@@ -160,9 +160,13 @@ export default class Context {
   async sellFlow(stockId: string, stockName: string, date: number) {
     // 如果不在庫存 跳過
     const inInventory = this.record.getInventoryStockId(stockId);
-    const inWaitSale = this.record.getWaitSaleStockId(stockId);
-    if (!inInventory) return;
+    if (!inInventory ) return;
 
+    // 在庫存中但當日買進 跳過
+    if (this.record.getInventoryStockIdData(stockId).buyDate === date) return;
+
+    // 取得資料
+    const inWaitSale = this.record.getWaitSaleStockId(stockId);
     const data = await this.sellMethod(stockId, date, inWaitSale);
     // 如果回傳空值 跳過
     if (!data) return;
