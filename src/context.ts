@@ -26,27 +26,26 @@ export type Options = {
   buyPrice?: BuyPrice;
   sellPrice?: SellPrice;
 };
+
+export type StrategyMethod = (
+  stockId: string,
+  date: number,
+  bypassCondition: boolean | undefined
+) => Promise<StockType | null>;
+
 export default class Context {
   dateSequence: DateSequence; // 日期模組
   transaction: Transaction; // 交易模組
   record: Record; // 紀錄模組
   capital: number; // 本金
-  hightLoss?: number; // 虧損上限
+  hightLoss?: number; // 虧損上限(%)
   unSoldProfit: number; // 未實現損益
   hightStockPrice?: number; // 買入股價上限
   lowStockPrice?: number; // 買入股價下限
   buyPrice: BuyPrice; // 買入價格位置
   sellPrice: SellPrice; // 賣出價格位置
-  sellMethod: (
-    stockId: string,
-    date: number,
-    inWaitPurchased: boolean
-  ) => Promise<StockType | null>; // 賣出條件
-  buyMethod: (
-    stockId: string,
-    date: number,
-    inWaitSale: boolean
-  ) => Promise<StockType | null>; // 買入條件
+  sellMethod: StrategyMethod[]; // 賣出條件
+  buyMethod: StrategyMethod[]; // 買入條件
   stocks: { id: string; name: string }[]; // 股票清單
 
   constructor({
@@ -57,16 +56,8 @@ export default class Context {
     options,
   }: {
     dates: number[];
-    sell: (
-      stockId: string,
-      date: number,
-      inWaitPurchased: boolean
-    ) => Promise<StockType | null>;
-    buy: (
-      stockId: string,
-      date: number,
-      inWaitSale: boolean
-    ) => Promise<StockType | null>;
+    sell: StrategyMethod[];
+    buy: StrategyMethod[];
     options?: Options;
     stocks?: { id: string; name: string }[];
   }) {
@@ -74,7 +65,7 @@ export default class Context {
     this.capital = options?.capital ? options.capital : 300000;
     this.hightStockPrice = options?.hightStockPrice;
     this.lowStockPrice = options?.lowStockPrice;
-    this.hightLoss = options?.hightLoss; // 0.1 = 10%
+    this.hightLoss = options?.hightLoss; // 10 = 10%
     this.buyPrice = options?.buyPrice || BuyPrice.OPEN;
     this.sellPrice = options?.sellPrice || SellPrice.LOW;
     this.sellMethod = sell;
@@ -110,7 +101,16 @@ export default class Context {
     }
 
     // 取待買或驗證通過的資料
-    const data = await this.buyMethod(stockId, date, inWaitPurchased);
+    let data: StockType | null = null;
+    if (inWaitPurchased) {
+      data = await this.buyMethod[0](stockId, date, inWaitPurchased);
+    } else {
+      for (let index = 0; index < this.buyMethod.length; index++) {
+        const buyMethod = this.buyMethod[index];
+        data = await buyMethod(stockId, date, inWaitPurchased);
+        if (data) break; // 找到符合條件的資料就跳出
+      }
+    }
 
     // 如果回傳空值 跳過
     if (!data) return;
@@ -160,14 +160,23 @@ export default class Context {
   async sellFlow(stockId: string, stockName: string, date: number) {
     // 如果不在庫存 跳過
     const inInventory = this.record.getInventoryStockId(stockId);
-    if (!inInventory ) return;
+    if (!inInventory) return;
 
     // 在庫存中但當日買進 跳過
     if (this.record.getInventoryStockIdData(stockId).buyDate === date) return;
 
     // 取得資料
     const inWaitSale = this.record.getWaitSaleStockId(stockId);
-    const data = await this.sellMethod(stockId, date, inWaitSale);
+    let data: StockType | null = null;
+    if (inWaitSale) {
+      data = await this.sellMethod[0](stockId, date, inWaitSale);
+    } else {
+      for (let index = 0; index < this.sellMethod.length; index++) {
+        const sellMethod = this.sellMethod[index];
+        data = await sellMethod(stockId, date, inWaitSale);
+        if (data) break; // 找到符合條件的資料就跳出
+      }
+    }
     // 如果回傳空值 跳過
     if (!data) return;
 
@@ -191,7 +200,8 @@ export default class Context {
     const buyData = this.record.getInventoryStockIdData(stockId);
     if (
       this.hightLoss &&
-      buyData.buyPrice - buyData.buyPrice * this.hightLoss > 1000 * data.l
+      buyData.buyPrice - buyData.buyPrice * (this.hightLoss / 100) >
+        1000 * data.l
     ) {
       this.record.saveWaitSale({
         id: stockId,
