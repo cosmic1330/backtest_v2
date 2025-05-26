@@ -44,8 +44,8 @@ export default class Context {
   lowStockPrice?: number; // 買入股價下限
   buyPrice: BuyPrice; // 買入價格位置
   sellPrice: SellPrice; // 賣出價格位置
-  sellMethod: StrategyMethod[]; // 賣出條件
-  buyMethod: StrategyMethod[]; // 買入條件
+  sellMethod: StrategyMethod[]; // 賣出條件 符合其一即可賣出
+  buyMethod: StrategyMethod[]; // 買入條件 符合其一即可買入
   stocks: { id: string; name: string }[]; // 股票清單
 
   constructor({
