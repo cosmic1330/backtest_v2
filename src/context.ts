@@ -30,7 +30,9 @@ export type Options = {
 export type StrategyMethod = (
   stockId: string,
   date: number,
-  bypassCondition: boolean | undefined
+  options?: {
+    bypassCondition?: boolean;
+  }
 ) => Promise<StockType | null>;
 
 export default class Context {
@@ -103,11 +105,15 @@ export default class Context {
     // 取待買或驗證通過的資料
     let data: StockType | null = null;
     if (inWaitPurchased) {
-      data = await this.buyMethod[0](stockId, date, inWaitPurchased);
+      data = await this.buyMethod[0](stockId, date, {
+        bypassCondition: inWaitPurchased, // 跳過條件驗證
+      });
     } else {
       for (let index = 0; index < this.buyMethod.length; index++) {
         const buyMethod = this.buyMethod[index];
-        data = await buyMethod(stockId, date, inWaitPurchased);
+        data = await buyMethod(stockId, date, {
+          bypassCondition: inWaitPurchased, // 跳過條件驗證
+        });
         if (data) break; // 找到符合條件的資料就跳出
       }
     }
@@ -169,11 +175,15 @@ export default class Context {
     const inWaitSale = this.record.getWaitSaleStockId(stockId);
     let data: StockType | null = null;
     if (inWaitSale) {
-      data = await this.sellMethod[0](stockId, date, inWaitSale);
+      data = await this.sellMethod[0](stockId, date, {
+        bypassCondition: inWaitSale, // 跳過條件驗證
+      });
     } else {
       for (let index = 0; index < this.sellMethod.length; index++) {
         const sellMethod = this.sellMethod[index];
-        data = await sellMethod(stockId, date, inWaitSale);
+        data = await sellMethod(stockId, date, {
+          bypassCondition: inWaitSale, // 跳過條件驗證
+        });
         if (data) break; // 找到符合條件的資料就跳出
       }
     }
